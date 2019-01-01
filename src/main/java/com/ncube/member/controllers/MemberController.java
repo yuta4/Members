@@ -20,7 +20,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 @RestController()
-@Api(value="members",description="Members management")
+@Api(value = "members", description = "Members management")
 @RequestMapping("members")
 public class MemberController {
 
@@ -33,7 +33,7 @@ public class MemberController {
         this.amazonClient = amazonClient;
     }
 
-    @ApiOperation(value="post member",response=ResponseEntity.class)
+    @ApiOperation(value = "post member", response = ResponseEntity.class)
     @PostMapping
     public ResponseEntity<Object> createMember(@RequestPart("member") Member member,
                                                @RequestPart("image") MultipartFile imageFile) {
@@ -41,7 +41,7 @@ public class MemberController {
         return saveMember(member, imageFile, memberId);
     }
 
-    @ApiOperation(value="put member",response=ResponseEntity.class)
+    @ApiOperation(value = "put member", response = ResponseEntity.class)
     @PutMapping("{id}")
     public ResponseEntity<Object> updateMember(@PathVariable String id, @RequestPart("member") Member member,
                                                @RequestPart("image") MultipartFile imageFile) throws Throwable {
@@ -55,7 +55,7 @@ public class MemberController {
 
     private String validateImageAndGetExtension(String contentType) {
         String[] fileTypeAndExtension = contentType.split("/");
-        if(!fileTypeAndExtension[0].equals("image")) {
+        if (!fileTypeAndExtension[0].equals("image")) {
             throw new IllegalArgumentException("Only images are acceptable as member picture");
         }
         return fileTypeAndExtension[1];
@@ -74,19 +74,19 @@ public class MemberController {
         return ResponseEntity.created(location).build();
     }
 
-    @ApiOperation(value="get members",response=List.class)
+    @ApiOperation(value = "get members", response = List.class)
     @GetMapping
     public List<Member> listMembers() {
         return memberRepository.findAll();
     }
 
-    @ApiOperation(value="get member",response=Member.class)
+    @ApiOperation(value = "get member", response = Member.class)
     @GetMapping("/{id}")
     public Member getMember(@PathVariable String id) throws Throwable {
         return memberRepository.findById(id).orElseThrow(getNoIdExceptionSupplier(id));
     }
 
-    @ApiOperation(value="delete member",response=ResponseEntity.class)
+    @ApiOperation(value = "delete member", response = ResponseEntity.class)
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<Object> deleteMember(@PathVariable String id) throws Throwable {
         Member memberToDelete = memberRepository.findById(id).orElseThrow(getNoIdExceptionSupplier(id));
