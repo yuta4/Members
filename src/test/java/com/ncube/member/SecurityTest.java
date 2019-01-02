@@ -1,12 +1,14 @@
 package com.ncube.member;
 
+import com.ncube.member.config.WebSecurityConfig;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -18,7 +20,8 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@WebAppConfiguration
+@ContextConfiguration(classes = {WebSecurityConfig.class, AuthenticationEntryPoint.class})
 public class SecurityTest {
 
     @Value("${spring.security.user.name}")
@@ -42,8 +45,7 @@ public class SecurityTest {
 
     @Test
     public void testAuthorized() throws Exception {
-        mvc
-                .perform(get("/members")
+        mvc.perform(get("/members")
                 .with(httpBasic(user, password)))
                 .andExpect(authenticated());
     }
@@ -51,16 +53,14 @@ public class SecurityTest {
 
     @Test
     public void testWrongAuthorization() throws Exception {
-        mvc
-                .perform(get("/members")
-                .with(httpBasic("wrong", password)))
+        mvc.perform(get("/members")
+                .with(httpBasic("wrongUser", password)))
                 .andExpect(unauthenticated());
     }
 
     @Test
     public void testUnauthorized() throws Exception {
-        mvc
-                .perform(get("/members"))
+        mvc.perform(get("/members"))
                 .andExpect(unauthenticated());
     }
 

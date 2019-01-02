@@ -9,7 +9,7 @@ import java.time.LocalDate;
 
 @Data
 @RequiredArgsConstructor
-@Document(collection="members")
+@Document(collection = "members")
 public class Member {
 
     @Id

@@ -1,8 +1,9 @@
 package com.ncube.member.controllers;
 
+import com.ncube.member.MemberRequestException;
 import com.ncube.member.model.Member;
 import com.ncube.member.repositories.MemberRepository;
-import com.ncube.member.services.AmazonClient;
+import com.ncube.member.services.ImagesStoreService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,12 +26,12 @@ import java.util.function.Supplier;
 public class MemberController {
 
     private final MemberRepository memberRepository;
-    private final AmazonClient amazonClient;
+    private final ImagesStoreService<MultipartFile> imagesStoreService;
 
     @Autowired
-    public MemberController(MemberRepository memberRepository, AmazonClient amazonClient) {
+    public MemberController(MemberRepository memberRepository, ImagesStoreService<MultipartFile> imagesStoreService) {
         this.memberRepository = memberRepository;
-        this.amazonClient = amazonClient;
+        this.imagesStoreService = imagesStoreService;
     }
 
     @ApiOperation(value = "post member", response = ResponseEntity.class)
@@ -47,7 +48,7 @@ public class MemberController {
                                                @RequestPart("image") MultipartFile imageFile) throws Throwable {
         Member updatingMember = memberRepository.findById(id).orElseThrow(getNoIdExceptionSupplier(id));
 
-        amazonClient.deleteFileFromS3Bucket(updatingMember.getImageUrl());
+        imagesStoreService.deleteFile(updatingMember.getImageUrl());
 
         member.setId(id);
         return saveMember(member, imageFile, id);
@@ -56,14 +57,14 @@ public class MemberController {
     private String validateImageAndGetExtension(String contentType) {
         String[] fileTypeAndExtension = contentType.split("/");
         if (!fileTypeAndExtension[0].equals("image")) {
-            throw new IllegalArgumentException("Only images are acceptable as member picture");
+            throw new MemberRequestException("Only images are acceptable as member picture");
         }
         return fileTypeAndExtension[1];
     }
 
     private ResponseEntity<Object> saveMember(Member member, MultipartFile imageFile, String memberId) {
         String fileExtension = validateImageAndGetExtension(Objects.requireNonNull(imageFile.getContentType()));
-        String imageUrl = amazonClient.uploadFile(imageFile, String.format("Member_%s.%s", memberId, fileExtension));
+        String imageUrl = imagesStoreService.uploadFile(imageFile, String.format("Member_%s.%s", memberId, fileExtension));
         member.setImageUrl(imageUrl);
 
         memberRepository.save(member);
@@ -91,7 +92,7 @@ public class MemberController {
     public ResponseEntity<Object> deleteMember(@PathVariable String id) throws Throwable {
         Member memberToDelete = memberRepository.findById(id).orElseThrow(getNoIdExceptionSupplier(id));
 
-        amazonClient.deleteFileFromS3Bucket(memberToDelete.getImageUrl());
+        imagesStoreService.deleteFile(memberToDelete.getImageUrl());
 
         memberRepository.delete(memberToDelete);
 
@@ -99,10 +100,10 @@ public class MemberController {
     }
 
     private Supplier<Throwable> getNoIdExceptionSupplier(String id) {
-        return () -> new IllegalArgumentException(String.format("No member with id %s found", id));
+        return () -> new MemberRequestException(String.format("No member with id %s found", id));
     }
 
-    public @ExceptionHandler({IllegalArgumentException.class})
+    public @ExceptionHandler({MemberRequestException.class})
     void handleBadRequests(HttpServletResponse response) throws IOException {
         response.sendError(HttpStatus.BAD_REQUEST.value());
     }
